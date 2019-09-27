@@ -1,0 +1,5 @@
+dataset
+result
+.pylintrc
+.vscode
+__pycache__
