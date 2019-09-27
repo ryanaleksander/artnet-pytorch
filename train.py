@@ -69,6 +69,10 @@ def train(params, train_loader, validation_loader):
     optimizer = optim.SGD(artnet.parameters(), lr=params.getfloat('lr'), momentum=params.getfloat('momentum'))
     criterion = nn.MSELoss()
 
+    # Learning rate decay config
+    lr_steps = [int(step) for step in params.get('lr_steps').split(',')]
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=lr_steps, gamma=0.1)
+
     for epoch in range(params.getint('num_epochs')):
         print('Starting epoch %i:' % (epoch + 1))
         print('*********Training*********')
@@ -116,6 +120,9 @@ def train(params, train_loader, validation_loader):
         if (epoch + 1) % params['ckpt'] == 0:
             print('Saving checkpoint...' )
             torch.save(artnet.state_dict(), os.path.join(params['ckpt_path'], 'arnet_%i' % (epoch + 1)))
+
+        # Update LR
+        scheduler.step()
     print('Training complete, saving final model....')
     torch.save(artnet.state_dict(), os.path.join(params['ckpt_path'], 'arnet_final'))
     return training_losses, validating_losses
