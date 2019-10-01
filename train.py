@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -24,6 +25,7 @@ def main():
     config.read(args.config)
 
     train_loader, validation_loader = load_data(config['Train Data'])
+    print(len(validation_loader))
     train_losses, val_losses = train(config['Train'], train_loader, validation_loader)
     save_result(train_losses, val_losses, config['Train Result'])
 
@@ -65,7 +67,7 @@ def train(params, train_loader, validation_loader):
         device = 'cuda'
 
     artnet = ARTNet(num_classes=params.getint('num_classes'))
-    artnet.to(device)
+    artnet = artnet.to(device)
     optimizer = optim.SGD(artnet.parameters(), lr=params.getfloat('lr'), momentum=params.getfloat('momentum'))
     criterion = nn.MSELoss()
 
@@ -76,17 +78,18 @@ def train(params, train_loader, validation_loader):
     for epoch in range(params.getint('num_epochs')):
         print('Starting epoch %i:' % (epoch + 1))
         print('*********Training*********')
+        artnet.train()
         training_loss = 0
         training_losses = []
         training_progress = tqdm(enumerate(train_loader))
         for batch_index, (frames, label) in training_progress:
             training_progress.set_description('Batch no. %i: ' % batch_index)
-            frames.to(device)
-            label.to(device)
+            frames, label = frames.to(device), label.to(device)
 
             optimizer.zero_grad()
             output = artnet.forward(frames)
             loss = criterion(output, label)
+            loss.backward()
             optimizer.step()
 
             training_loss += loss.item()
@@ -96,28 +99,27 @@ def train(params, train_loader, validation_loader):
             print(f'Training loss: {avg_loss}')
 
         print('*********Validating*********')
+        artnet.eval()
         validating_loss = 0
         validating_losses = []
         validating_progress = tqdm(enumerate(validation_loader))
-        for batch_index, (frames, label) in validating_progress:
-            validating_progress.set_description('Batch no. %i: ' % batch_index)
-            artnet.eval()
-            frames.to(device)
-            label.to(device)
+        with torch.no_grad():
+            for batch_index, (frames, label) in validating_progress:
+                validating_progress.set_description('Batch no. %i: ' % batch_index)
+                frames, label = frames.to(device), label.to(device)
 
-            with torch.no_grad():
-                output = artnet.forward(frames)
-                loss = criterion(output, label)
+                    output = artnet.forward(frames)
+                    loss = criterion(output, label)
 
-                validating_loss += loss.item()
-        else:
-            avg_loss = validating_loss / len(train_loader)
-            validating_losses.append(avg_loss)
-            print(f'Validating loss: {avg_loss}')
+                    validating_loss += loss.item()
+            else:
+                avg_loss = validating_loss / len(validation_loader)
+                validating_losses.append(avg_loss)
+                print(f'Validating loss: {avg_loss}')
         print('=============================================')
         print('Epoch %i complete' % (epoch + 1))
 
-        if (epoch + 1) % params['ckpt'] == 0:
+        if (epoch + 1) % params.getint('ckpt') == 0:
             print('Saving checkpoint...' )
             torch.save(artnet.state_dict(), os.path.join(params['ckpt_path'], 'arnet_%i' % (epoch + 1)))
 

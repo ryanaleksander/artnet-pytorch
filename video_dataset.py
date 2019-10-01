@@ -21,7 +21,9 @@ class VideoDataset(torch.utils.data.Dataset):
         for i in range(len(cls_lst)):
             cls_dir = os.path.join(root_dir, cls_lst[i])
             for video in os.listdir(cls_dir):
-                self.samples.append((os.path.join(cls_dir, video), i))
+                video_path = os.path.join(cls_dir, video)
+                if len(os.listdir(video_path)) > 0:
+                    self.samples.append((os.path.join(cls_dir, video), i))
 
     def __getitem__(self, index):
         sample = self.samples[index]
