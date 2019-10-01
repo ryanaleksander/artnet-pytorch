@@ -32,7 +32,7 @@ class SMART(nn.Module):
         self.relation = nn.Sequential(
             nn.Conv3d(in_channels, 64, kernel_size=kernel, stride=stride, padding=padding, bias=False),
             nn.BatchNorm3d(64),
-            SquarePool(),
+            #SquarePool(),
             CrossChannelPool(64, 32),
             nn.BatchNorm3d(32),
             nn.ReLU()
