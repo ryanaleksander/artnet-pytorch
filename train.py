@@ -13,7 +13,7 @@ from configparser import ConfigParser
 import argparse
 
 import utils
-from video_dataset import VideoDataset
+from video_dataset import VideoFramesDataset
 from artnet import ARTNet
 
 def main():
@@ -37,13 +37,13 @@ def load_data(params):
         transforms.Resize((params.getint('width'), params.getint('height'))),
         transforms.RandomCrop((params.getint('crop'), params.getint('crop'))),
         transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
     ])
 
-    train_set = VideoDataset(params['path'], transform=transform)
+    train_set = VideoFramesDataset(params['path'], transform=transform)
     dataset_size = len(train_set)
     indices = list(range(dataset_size))
-    split = int(np.floor(params.getfloat('val_split')))
+    split = int(np.floor(params.getfloat('val_split') * dataset_size))
 
     # Shuffle dataset
     if params.getboolean('shuffle'):
@@ -69,7 +69,7 @@ def train(params, train_loader, validation_loader):
     artnet = ARTNet(num_classes=params.getint('num_classes'))
     artnet = artnet.to(device)
     optimizer = optim.SGD(artnet.parameters(), lr=params.getfloat('lr'), momentum=params.getfloat('momentum'))
-    criterion = nn.MSELoss()
+    criterion = nn.CrossEntropyLoss()
 
     # Learning rate decay config
     lr_steps = [int(step) for step in params.get('lr_steps').split(',')]
@@ -87,7 +87,7 @@ def train(params, train_loader, validation_loader):
             frames, label = frames.to(device), label.to(device)
 
             optimizer.zero_grad()
-            output = artnet.forward(frames)
+            output = artnet(frames)
             loss = criterion(output, label)
             loss.backward()
             optimizer.step()
@@ -108,10 +108,10 @@ def train(params, train_loader, validation_loader):
                 validating_progress.set_description('Batch no. %i: ' % batch_index)
                 frames, label = frames.to(device), label.to(device)
 
-                    output = artnet.forward(frames)
-                    loss = criterion(output, label)
+                output = artnet(frames)
+                loss = criterion(output, label)
 
-                    validating_loss += loss.item()
+                validating_loss += loss.item()
             else:
                 avg_loss = validating_loss / len(validation_loader)
                 validating_losses.append(avg_loss)
@@ -121,7 +121,7 @@ def train(params, train_loader, validation_loader):
 
         if (epoch + 1) % params.getint('ckpt') == 0:
             print('Saving checkpoint...' )
-            torch.save(artnet.state_dict(), os.path.join(params['ckpt_path'], 'arnet_%i' % (epoch + 1)))
+            torch.save(artnet.state_dict(), os.path.join(params['ckpt_path'], 'artnet_%i.pth' % (epoch + 1)))
 
         # Update LR
         scheduler.step()

@@ -6,10 +6,10 @@ from torchvision import transforms
 import utils
 
 
-class VideoDataset(torch.utils.data.Dataset):
-    """Some Information about VideoDataset"""
+class VideoFramesDataset(torch.utils.data.Dataset):
+    """Some Information about VideoFramesDataset"""
     def __init__(self, root_dir, frame_num=16, transform=None):
-        super(VideoDataset, self).__init__()
+        super(VideoFramesDataset, self).__init__()
 
         self.samples = []
         self.transform = transform
@@ -36,7 +36,7 @@ class VideoDataset(torch.utils.data.Dataset):
         if self.transform is not None:
             frames = [self.transform(frame) for frame in frames]
         frames = torch.stack(frames)
-        return frames, utils.one_hot_encode(sample[1], self.num_classes)
+        return frames, sample[i]
 
     def __len__(self):
         return len(self.samples)
