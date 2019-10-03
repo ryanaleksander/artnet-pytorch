@@ -108,10 +108,10 @@ def train(params, train_loader, validation_loader):
                 validating_progress.set_description('Batch no. %i: ' % batch_index)
                 frames, label = frames.to(device), label.to(device)
 
-                    output = artnet.forward(frames)
-                    loss = criterion(output, label)
+                output = artnet.forward(frames)
+                loss = criterion(output, label)
 
-                    validating_loss += loss.item()
+                validating_loss += loss.item()
             else:
                 avg_loss = validating_loss / len(validation_loader)
                 validating_losses.append(avg_loss)
