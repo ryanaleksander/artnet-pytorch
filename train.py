@@ -140,7 +140,7 @@ def save_result(train_losses, val_losses, params):
     plt.savefig(os.path.join(params['path'], 'result.png'))
 
     # Save log
-    file_path = os.path.join(os.path.join(params['path'], result.txt))
+    file_path = os.path.join(os.path.join(params['path'], 'result.txt'))
     with open(file_path, 'w') as f:
         for i in range(len(train_losses)):
             f.write('Epoch %i: training loss - %0.4f, validation loss - %0.4f\n' % (i + 1, train_losses[i], val_losses[i]))
