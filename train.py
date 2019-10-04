@@ -67,6 +67,8 @@ def train(params, train_loader, validation_loader):
         device = 'cuda'
 
     artnet = ARTNet(num_classes=params.getint('num_classes'))
+    if params['pretrained'] is not None:
+        artnet = artnet.load_state_dict(torch.load(params['pretrained']))
     artnet = artnet.to(device)
     optimizer = optim.SGD(artnet.parameters(), lr=params.getfloat('lr'), momentum=params.getfloat('momentum'))
     criterion = nn.CrossEntropyLoss()
