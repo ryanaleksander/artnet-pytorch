@@ -10,7 +10,7 @@ def one_hot_encode(index, num):
     return torch.Tensor(vector)
 
 def extract_frames(video_path, save_path, fps=5):
-    video_name = video_path.split('\\')[-1].split('.')[0]
+    video_name = video_path.split('/')[-1].split('.')[0]
     extracted_path = os.path.join(save_path, video_name)
 
     if not os.path.isdir(extracted_path):

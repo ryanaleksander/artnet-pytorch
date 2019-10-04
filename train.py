@@ -62,14 +62,20 @@ def load_data(params):
     return train_loader, validation_loader
 
 def train(params, train_loader, validation_loader):
-    device = 'cpu'
-    if torch.cuda.is_available():
-        device = 'cuda'
-
     artnet = ARTNet(num_classes=params.getint('num_classes'))
-    if params['pretrained'] is not None:
+    device = 'cuda'
+
+    # Load pretrained model
+    if 'pretrained' in params and params['pretrained'] is not None:
         artnet = artnet.load_state_dict(torch.load(params['pretrained']))
-    artnet = artnet.to(device)
+
+    #  Determine training devices
+    if params.getboolean('cuda'):
+        artnet = nn.DataParallel(artnet, device_ids=params('gpus').split(','))
+    else:
+        device = 'cpu'
+        artnet = artnet.to(device)
+
     optimizer = optim.SGD(artnet.parameters(), lr=params.getfloat('lr'), momentum=params.getfloat('momentum'))
     criterion = nn.CrossEntropyLoss()
 
