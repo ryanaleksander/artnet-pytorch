@@ -67,14 +67,17 @@ def train(params, train_loader, validation_loader):
 
     # Load pretrained model
     if 'pretrained' in params and params['pretrained'] is not None:
-        artnet = artnet.load_state_dict(torch.load(params['pretrained']))
+        artnet.load_state_dict(torch.load(params['pretrained']))
 
     #  Determine training devices
     if params.getboolean('cuda'):
-        artnet = nn.DataParallel(artnet, device_ids=params('gpus').split(','))
+        devices = ['cuda:' + id for id in params['gpus'].split(',')]
+        if len(devices) > 1:
+            artnet = nn.DataParallel(artnet, device_ids=devices)
     else:
         device = 'cpu'
-        artnet = artnet.to(device)
+
+    artnet = artnet.to(device)
 
     optimizer = optim.SGD(artnet.parameters(), lr=params.getfloat('lr'), momentum=params.getfloat('momentum'))
     criterion = nn.CrossEntropyLoss()
@@ -111,7 +114,7 @@ def train(params, train_loader, validation_loader):
             accuracy = correct / len(train_loader) * train_loader.batch_size
             training_losses.append(avg_loss)
             print(f'Training loss: {avg_loss}')
-            print(f'Training accuracy': {accuracy:0.2f})
+            print(f'Training accuracy: {accuracy:0.2f}'')
 
         print('*********Validating*********')
         artnet.eval()
@@ -135,7 +138,7 @@ def train(params, train_loader, validation_loader):
                 accuracy = correct / len(train_loader) * validation_loader.batch_size
                 validating_losses.append(avg_loss)
                 print(f'Validation loss: {avg_loss}')
-                print(f'Validation accuracy': {accuracy:0.2f})
+                print(f'Validation accuracy: {accuracy:0.2f}')
         print('=============================================')
         print('Epoch %i complete' % (epoch + 1))
 
