@@ -22,7 +22,7 @@ class VideoFramesDataset(torch.utils.data.Dataset):
             cls_dir = os.path.join(root_dir, cls_lst[i])
             for video in os.listdir(cls_dir):
                 video_path = os.path.join(cls_dir, video)
-                if len(os.listdir(video_path)) > 0:
+                if len(os.listdir(video_path)) > self.frame_num:
                     self.samples.append((os.path.join(cls_dir, video), i))
 
     def __getitem__(self, index):
@@ -36,7 +36,7 @@ class VideoFramesDataset(torch.utils.data.Dataset):
         if self.transform is not None:
             frames = [self.transform(frame) for frame in frames]
         frames = torch.stack(frames)
-        return frames, sample[i]
+        return frames, sample[1]
 
     def __len__(self):
         return len(self.samples)
