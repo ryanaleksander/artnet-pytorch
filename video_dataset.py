@@ -18,7 +18,7 @@ class VideoFramesDataset(torch.utils.data.Dataset):
         # Import data in root_dir, each subfolder corresponds to a class label
         self.cls_lst = os.listdir(root_dir)
         self.num_classes = len(self.cls_lst)
-        for i in self.num_classes:
+        for i in range(self.num_classes):
             cls_dir = os.path.join(root_dir, self.cls_lst[i])
             for video in os.listdir(cls_dir):
                 video_path = os.path.join(cls_dir, video)
