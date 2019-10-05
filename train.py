@@ -61,7 +61,7 @@ def load_data(params):
 
     print('****Dataset info****')
     print(f'Number of classes: {train_set.num_classes}')
-    print(f'Class list: {', '.join(train_set.cls_lst)}')
+    print(f'Class list: {", ".join(train_set.cls_lst)}')
     print(f'Numer of training samples: {len(train_loader) * batch_size}')
     print(f'Numer of validation samples: {len(validation_loader) * batch_size}')
     return train_loader, validation_loader
