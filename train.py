@@ -76,7 +76,6 @@ def train(params, train_loader, validation_loader):
             artnet = nn.DataParallel(artnet, device_ids=devices)
     else:
         device = 'cpu'
-
     artnet = artnet.to(device)
 
     optimizer = optim.SGD(artnet.parameters(), lr=params.getfloat('lr'), momentum=params.getfloat('momentum'))
@@ -107,6 +106,7 @@ def train(params, train_loader, validation_loader):
 
             # Calculating accuracy
             _, prediction = output.max(dim=1)
+            prediction, label = prediction.to('cpu'), label.to('cpu')
             correct += prediction.eq(torch.LongTensor(label)).sum()
 
         else:
@@ -114,7 +114,7 @@ def train(params, train_loader, validation_loader):
             accuracy = correct / len(train_loader) * train_loader.batch_size
             training_losses.append(avg_loss)
             print(f'Training loss: {avg_loss}')
-            print(f'Training accuracy: {accuracy:0.2f}'')
+            print(f'Training accuracy: {accuracy:0.2f}')
 
         print('*********Validating*********')
         artnet.eval()
@@ -132,6 +132,7 @@ def train(params, train_loader, validation_loader):
 
                 # Calculating accuracy
                 _, prediction = output.max(dim=1)
+                prediction, label = prediction.to('cpu'), label.to('cpu')
                 correct += prediction.eq(torch.LongTensor(label)).sum()
             else:
                 avg_loss = validating_loss / len(validation_loader)
