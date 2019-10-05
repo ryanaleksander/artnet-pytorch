@@ -25,7 +25,6 @@ def main():
     config.read(args.config)
 
     train_loader, validation_loader = load_data(config['Train Data'])
-    print(len(validation_loader))
     train_losses, val_losses = train(config['Train'], train_loader, validation_loader)
     save_result(train_losses, val_losses, config['Train Result'])
 
@@ -54,11 +53,17 @@ def load_data(params):
 
     train_sampler = SubsetRandomSampler(train_indices)
     valid_sampler = SubsetRandomSampler(val_indices)
+    batch_size = params.getint('batch_size')
 
-    train_loader = DataLoader(train_set, batch_size=params.getint('batch_size'), sampler=train_sampler)
-    validation_loader = DataLoader(train_set, batch_size=params.getint('batch_size'), sampler=valid_sampler)
+    train_loader = DataLoader(train_set, batch_size=batch_size, sampler=train_sampler)
+    validation_loader = DataLoader(train_set, batch_size=batch_size, sampler=valid_sampler)
     print('Done loading data')
 
+    print('****Dataset info****')
+    print(f'Number of classes: {train_set.num_classes}')
+    print(f'Class list: {', '.join(train_set.cls_lst)}')
+    print(f'Numer of training samples: {len(train_loader) * batch_size}')
+    print(f'Numer of validation samples: {len(validation_loader) * batch_size}')
     return train_loader, validation_loader
 
 def train(params, train_loader, validation_loader):
@@ -111,7 +116,7 @@ def train(params, train_loader, validation_loader):
 
         else:
             avg_loss = training_loss / len(train_loader)
-            accuracy = correct / len(train_loader) * train_loader.batch_size
+            accuracy = correct / (len(train_loader) * train_loader.batch_size)
             training_losses.append(avg_loss)
             print(f'Training loss: {avg_loss}')
             print(f'Training accuracy: {accuracy:0.2f}')
@@ -121,6 +126,7 @@ def train(params, train_loader, validation_loader):
         validating_loss = 0
         validating_losses = []
         validating_progress = tqdm(enumerate(validation_loader))
+        correct = 0
         with torch.no_grad():
             for batch_index, (frames, label) in validating_progress:
                 validating_progress.set_description('Batch no. %i: ' % batch_index)
@@ -136,7 +142,7 @@ def train(params, train_loader, validation_loader):
                 correct += prediction.eq(torch.LongTensor(label)).sum()
             else:
                 avg_loss = validating_loss / len(validation_loader)
-                accuracy = correct / len(train_loader) * validation_loader.batch_size
+                accuracy = correct / (len(train_loader) * validation_loader.batch_size)
                 validating_losses.append(avg_loss)
                 print(f'Validation loss: {avg_loss}')
                 print(f'Validation accuracy: {accuracy:0.2f}')
