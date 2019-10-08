@@ -3,6 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+
 
 class SquarePool(nn.Module):
     """Square Pooling Layer"""
@@ -162,6 +167,6 @@ class ARTNet(nn.Module):
         x = self.avgpool(x)
         x = x.view(-1, 512)
         x = self.fc8(x)
-        x = F.softmax(x, dim=1)
+        #x = F.softmax(x, dim=1)
 
         return x
