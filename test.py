@@ -51,6 +51,7 @@ def test(params, test_loader, class_list):
         device = 'cuda'
 
     artnet = ARTNet(num_classes=len(class_list))
+    artnet.load_state_dict(torch.load(params['model']))
     artnet = artnet.to(device)
 
     eval_scheme = evaluation.ConsecutiveSequencesDetectionEvaluation(pos_class=params['positive'], num_sequence=params.getint('num_sequence'))
