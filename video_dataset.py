@@ -4,11 +4,15 @@ import random
 from PIL import Image
 from torchvision import transforms
 import utils
+import resource
 
+# Nullify too many open files error
+_, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+resource.setrlimit(resource.RLIMIT_NOFILE, (hard, hard))
 
 class VideoFramesDataset(torch.utils.data.Dataset):
     """Some Information about VideoFramesDataset"""
-    def __init__(self, root_dir, frame_num=16, transform=None):
+    def __init__(self, root_dir, frame_num=0, transform=None):
         super(VideoFramesDataset, self).__init__()
 
         self.samples = []
@@ -27,14 +31,18 @@ class VideoFramesDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         sample = self.samples[index]
-        frames = [Image.open(os.path.join(sample[0], f)) for f in os.listdir(sample[0])]
+        frame_paths = [os.path.join(sample[0], f) for f in os.listdir(sample[0])]
 
-        # Get a random sequence of frames
-        frame_index = random.randrange(0, len(frames) - self.frame_num)
-        frames = frames[frame_index:frame_index + self.frame_num]
+        if self.frame_num > 1:
+            # Get a random sequence of frames
+            frame_index = random.randrange(0, len(frames) - self.frame_num)
+            frame_paths = frame_paths[frame_index:frame_index + self.frame_num]
+
+        frames = [Image.open(f) for f in frame_paths]
 
         if self.transform is not None:
             frames = [self.transform(frame) for frame in frames]
+
         frames = torch.stack(frames)
         return frames, sample[1]
 

@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 import matplotlib.pyplot as plt
+import evaluation
 from tqdm import tqdm
 from torchvision import transforms
 from torch.utils.data.sampler import SubsetRandomSampler
@@ -24,13 +25,11 @@ def main():
     config = ConfigParser()
     config.read(args.config)
 
-    test_loader = load_data(config['Test Data'])
-    print(len(test_loader))
-    confusion_matrix = test(config['Train'], test_loader)
+    test_loader, class_list = load_data(config['Test Data'])
+    accuracy = test(config['Test'], test_loader, class_list)
+    print(accuracy)
 
 def load_data(params):
-    """Load data for training"""
-
     print('Loading data...')
     transform = transforms.Compose([
         transforms.Resize((params.getint('width'), params.getint('height'))),
@@ -41,33 +40,45 @@ def load_data(params):
 
     
     test_set = VideoFramesDataset(params['path'], transform=transform)
-    print('Done loading data')
-    return DataLoader(test_set, batch_size=params.getint('batch_size'))
+    class_list = test_set.cls_lst
 
-def test(params, test_loader):
+    print('Done loading data')
+    return DataLoader(test_set, batch_size=1), class_list
+
+def test(params, test_loader, class_list):
     device = 'cpu'
     if torch.cuda.is_available():
         device = 'cuda'
 
-    artnet = ARTNet(num_classes=params.getint('num_classes'))
+    artnet = ARTNet(num_classes=len(class_list))
     artnet = artnet.to(device)
 
-    testing_progress = tqdm(enumerate(test_loader))
+    eval_scheme = evaluation.ConsecutiveSequencesDetectionEvaluation(pos_class=params['positive'], num_sequence=params.getint('num_sequence'))
 
-    results = []
+    testing_progress = tqdm(enumerate(test_loader))
+    testing_result = []
     ground_truths = []
+
     for batch_index, (frames, label) in testing_progress:
         testing_progress.set_description('Batch no. %i: ' % batch_index)
+        frame_num = params.getint('frame_num')
+        predictions = []
+        frames = frames.to(device)
+        ground_truths.append(params['positive'] == class_list[label])
+        for i in range(0, frames.size()[1], frame_num):
+            input = frames[:,i:i + frame_num,:,:,:]
+            output = artnet(input)
+            output = F.softmax(output, dim=1)
+            result = output.argmax(dim=1)
+            predictions.append(class_list[result])
+        testing_result.append(eval_scheme.eval(predictions))
+    #correct_predictions = [testing_result[i] == ground_truths[i] for i in range(len(testing_result))]
+    testing_result = [int(res) for res in testing_result]
+    ground_truths = [int(gt) for gt in ground_truths]
 
-        output = artnet(frames)
-        results.extends(list(output.argmax(dim=1)))
-        ground_truths.extends(label)
-    
-    cls_lst = params['cls_lst'].split(',')
-    
-    return calculate_confustion_matrix(results, ground_truths, cls_lst)
+    return calculate_confusion_matrix(testing_result, ground_truths, class_list)
 
-def calculate_confustion_matrix(results, ground_truths, cls_lst):
+def calculate_confusion_matrix(result, ground_truths, cls_lst):
     matrix = {
         'TP': {k: 0 for k in cls_lst},
         'FP': {k: 0 for k in cls_lst},
@@ -75,17 +86,17 @@ def calculate_confustion_matrix(results, ground_truths, cls_lst):
         'FN': {k: 0 for k in cls_lst}
     }
 
-    for i in range(len(labels)):
-        if labels[i] == ground_truths[i]:
-            matrix['TP'][cls_lst[labels[i]]] += 1
+    for i in range(len(result)):
+        if result[i] == ground_truths[i]:
+            matrix['TP'][cls_lst[result[i]]] += 1
             for label in cls_lst:
-                if label != cls_lst[labels[i]]:
+                if label != cls_lst[result[i]]:
                     matrix['TN'][label] += 1
         else:
             matrix['FN'][cls_lst[ground_truths[i]]] += 1
-            matrix['FP'][cls_lst[labels[i]]] += 1
+            matrix['FP'][cls_lst[result[i]]] += 1
             for label in cls_lst:
-                if label != cls_lst[labels[i]] and label != cls_lst[ground_truths[i]]:
+                if label != cls_lst[result[i]] and label != cls_lst[ground_truths[i]]:
                     matrix['TN'][label] += 1
     return matrix
 

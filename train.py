@@ -39,7 +39,7 @@ def load_data(params):
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
     ])
 
-    train_set = VideoFramesDataset(params['path'], transform=transform)
+    train_set = VideoFramesDataset(params['path'], frame_num=16, transform=transform)
     dataset_size = len(train_set)
     indices = list(range(dataset_size))
     split = int(np.floor(params.getfloat('val_split') * dataset_size))
