@@ -35,7 +35,7 @@ class VideoFramesDataset(torch.utils.data.Dataset):
 
         if self.frame_num > 1:
             # Get a random sequence of frames
-            frame_index = random.randrange(0, len(frames) - self.frame_num)
+            frame_index = random.randrange(0, len(frame_paths) - self.frame_num)
             frame_paths = frame_paths[frame_index:frame_index + self.frame_num]
 
         frames = [Image.open(f) for f in frame_paths]
