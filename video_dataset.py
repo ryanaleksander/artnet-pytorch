@@ -38,6 +38,11 @@ class VideoFramesDataset(torch.utils.data.Dataset):
             frame_index = random.randrange(0, len(frame_paths) - self.frame_num)
             frame_paths = frame_paths[frame_index:frame_index + self.frame_num]
 
+            leftover = len(frame_paths) % self.frame_num
+            if len(frame_paths) % self.frame_num != 0:
+                frame_paths.extend(frame_paths[self.frame_num-leftover:])
+
+
         frames = [Image.open(f) for f in frame_paths]
 
         if self.transform is not None:

@@ -51,7 +51,7 @@ def test(params, test_loader, class_list):
         device = 'cuda'
 
     artnet = ARTNet(num_classes=len(class_list))
-    artnet.load_state_dict(torch.load(params['model']))
+    artnet.load_state_dict(torch.load(params['model'], map_location=torch.device('cpu')))
     artnet = artnet.to(device)
 
     eval_scheme = evaluation.ConsecutiveSequencesDetectionEvaluation(pos_class=params['positive'], num_sequence=params.getint('num_sequence'))
@@ -59,19 +59,22 @@ def test(params, test_loader, class_list):
     testing_progress = tqdm(enumerate(test_loader))
     testing_result = []
     ground_truths = []
+    batch_size = params.getint('batch_size')
 
     for batch_index, (frames, label) in testing_progress:
         testing_progress.set_description('Batch no. %i: ' % batch_index)
         frame_num = params.getint('frame_num')
         predictions = []
         frames = frames.to(device)
+        frames = torch.split(frames, frame_num, dim=1)
+        frames = torch.cat(frames)
         ground_truths.append(params['positive'] == class_list[label])
-        for i in range(0, frames.size()[1], frame_num):
-            input = frames[:,i:i + frame_num,:,:,:]
+        for i in range(0, frames.size()[0], batch_size):
+            input = frames[i:i+batch_size]
             output = artnet(input)
             output = F.softmax(output, dim=1)
             result = output.argmax(dim=1)
-            predictions.append(class_list[result])
+            predictions.append([class_list[res] for res in result])
         testing_result.append(eval_scheme.eval(predictions))
     #correct_predictions = [testing_result[i] == ground_truths[i] for i in range(len(testing_result))]
     testing_result = [int(res) for res in testing_result]
