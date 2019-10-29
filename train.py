@@ -175,11 +175,6 @@ def save_result(train_losses, val_losses, params):
         for i in range(len(train_losses)):
             f.write('Epoch %i: training loss - %0.4f, validation loss - %0.4f\n' % (i + 1, train_losses[i], val_losses[i]))
 
-    
 if __name__ == '__main__':
     main()
 
-
-
-
-        
