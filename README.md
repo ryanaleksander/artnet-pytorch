@@ -46,10 +46,6 @@ Video frames have to be extracted prior to the training process. This repository
 [TODO]
 
 ## FAQ
-**Q: Is this a faithful implementation of the paper?**
-
-A: I've tried to implement the proposed approach as faithfully as possible. However, I had to disable the Square operation within the Relation branch as it's been causing the output to go to infinity. The performance without this squaring step doesn't seem to suffer, so for now, I'll keep it that way.
-
 **Q. Have you tested the code on any standard datasets?**
 
 A. As of now, no. I've been having trouble downloading the Kinetic dataset in full, so I've only been able to test the code on a few categories. I'll provide the full testing statistics as soon as possible.
