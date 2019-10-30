@@ -115,7 +115,8 @@ def train(params, train_loader, validation_loader):
             training_loss += loss.item()
 
             # Calculating accuracy
-            _, prediction = output.max(dim=1)
+            prediction = F.softmax(output, dim=1)
+            prediction = prediction.argmax(dim=1)
             prediction, label = prediction.to('cpu'), label.to('cpu')
             correct += prediction.eq(torch.LongTensor(label)).sum()
 
