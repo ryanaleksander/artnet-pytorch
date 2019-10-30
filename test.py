@@ -38,7 +38,6 @@ def load_data(params):
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
     ])
 
-    
     test_set = VideoFramesDataset(params['path'], transform=transform)
     class_list = test_set.cls_lst
 
@@ -54,57 +53,38 @@ def test(params, test_loader, class_list):
     artnet.load_state_dict(torch.load(params['model']))
     artnet = artnet.to(device)
 
-    eval_scheme = evaluation.ConsecutiveSequencesDetectionEvaluation(pos_class=params['positive'], num_sequence=params.getint('num_sequence'))
-
     testing_progress = tqdm(enumerate(test_loader))
     testing_result = []
     ground_truths = []
+    batch_size = params.getint('batch_size')
+    frame_num = params.getint('frame_num')
 
     for batch_index, (frames, label) in testing_progress:
         testing_progress.set_description('Batch no. %i: ' % batch_index)
-        frame_num = params.getint('frame_num')
-        predictions = []
-        frames = frames.to(device)
-        ground_truths.append(params['positive'] == class_list[label])
-        for i in range(0, frames.size()[1], frame_num):
-            input = frames[:,i:i + frame_num,:,:,:]
+
+        # Ensure that all samples have the equal amount of frames
+        leftover = frames.size()[1] % frame_num
+        if leftover != 0:
+            frames = torch.cat((frames, frames[:,-frame_num+leftover:,:,:,:]), dim=1)
+
+        # Split all frames into frame groups
+        frames = torch.split(frames, frame_num, dim=1)
+        frames = torch.cat(frames)
+        predictions = torch.zeros((1, len(class_list)))
+        ground_truths.append(label)
+        for i in range(0, frames.size()[0], batch_size):
+            input = frames[i:i+batch_size]
+            input = input.to(device)
             output = artnet(input)
             output = F.softmax(output, dim=1)
-            result = output.argmax(dim=1)
-            predictions.append(class_list[result])
-        testing_result.append(eval_scheme.eval(predictions))
-    #correct_predictions = [testing_result[i] == ground_truths[i] for i in range(len(testing_result))]
-    testing_result = [int(res) for res in testing_result]
-    ground_truths = [int(gt) for gt in ground_truths]
+            output = output.sum(dim=0)
+            predictions += output
+        testing_result.append(predictions.argmax().item())
 
-    return calculate_confusion_matrix(testing_result, ground_truths, class_list)
+    testing_result = torch.Tensor(testing_result)
+    ground_truths = torch.Tensor(ground_truths)
+    accuracy = torch.eq(testing_result, ground_truths).sum() / len(ground_truths)
 
-def calculate_confusion_matrix(result, ground_truths, cls_lst):
-    matrix = {
-        'TP': {k: 0 for k in cls_lst},
-        'FP': {k: 0 for k in cls_lst},
-        'TN': {k: 0 for k in cls_lst},
-        'FN': {k: 0 for k in cls_lst}
-    }
-
-    for i in range(len(result)):
-        if result[i] == ground_truths[i]:
-            matrix['TP'][cls_lst[result[i]]] += 1
-            for label in cls_lst:
-                if label != cls_lst[result[i]]:
-                    matrix['TN'][label] += 1
-        else:
-            matrix['FN'][cls_lst[ground_truths[i]]] += 1
-            matrix['FP'][cls_lst[result[i]]] += 1
-            for label in cls_lst:
-                if label != cls_lst[result[i]] and label != cls_lst[ground_truths[i]]:
-                    matrix['TN'][label] += 1
-    return matrix
 
 if __name__ == '__main__':
     main()
-
-
-
-
-        
