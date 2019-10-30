@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 from tqdm import tqdm
 from torchvision import transforms
 from torch.utils.data.sampler import SubsetRandomSampler
@@ -15,6 +16,9 @@ import argparse
 import utils
 from video_dataset import VideoFramesDataset
 from artnet import ARTNet
+
+# Chnage mpl backend
+matplotlib.use('Agg')
 
 def main():
     parser = argparse.ArgumentParser()
