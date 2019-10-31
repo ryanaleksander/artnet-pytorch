@@ -22,7 +22,7 @@ class CrossChannelPool(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(CrossChannelPool, self).__init__()
         self.conv = nn.Conv3d(in_channels, out_channels, kernel_size=(1,1,1), stride=(1,1,1))
-        self.conv.weight.fill_(0.5)
+        self.conv.weight.data.fill_(0.5)
 
     def forward(self, x):
         return self.conv(x)
@@ -65,7 +65,7 @@ class C3D_SMART(nn.Module):
     def __init__(self, in_channels, out_channels, kernel, stride=(1,1,1), padding=(0,0,0)):
         super(C3D_SMART, self).__init__()
 
-        self.conv3d = nn.Conv3d(in_channels, out_channels, kernel=kernel, stride=stride, padding=padding)
+        self.conv3d = nn.Conv3d(in_channels, out_channels, kernel_size=kernel, stride=stride, padding=padding)
         self.bn = nn.BatchNorm3d(out_channels)
         self.smart = SMART(out_channels, out_channels, kernel=kernel, stride=(1,1,1), padding=padding)
 
@@ -108,17 +108,17 @@ class ARTNet(nn.Module):
         # Conv5
         self.resnet5a_down = nn.Conv3d(256, 512, kernel_size=(3,3,3), stride=(2,2,2), padding=(1,1,1))
         self.conv5_1 = nn.Sequential(
-            nn.Conv3d(256, 512, kernel=(3,3,3), stride=(2,2,2), padding=(1,1,1)),
+            nn.Conv3d(256, 512, kernel_size=(3,3,3), stride=(2,2,2), padding=(1,1,1)),
             nn.BatchNorm3d(512),
             nn.ReLU(),
-            nn.Conv3d(512, 512, kernel=(3,3,3), stride=(2,2,2), padding=(1,1,1)),
+            nn.Conv3d(512, 512, kernel_size=(3,3,3), stride=(1,1,1), padding=(1,1,1)),
         )
         self.resnet5a_bn = nn.BatchNorm3d(512)
         self.conv5_2 = nn.Sequential(
-            nn.Conv3d(512, 512, kernel=(3,3,3), stride=(1,1,1), padding=(1,1,1)),
+            nn.Conv3d(512, 512, kernel_size=(3,3,3), stride=(1,1,1), padding=(1,1,1)),
             nn.BatchNorm3d(512),
             nn.ReLU(),
-            nn.Conv3d(512, 512, kernel=(3,3,3), stride=(1,1,1), padding=(1,1,1)),
+            nn.Conv3d(512, 512, kernel_size=(3,3,3), stride=(1,1,1), padding=(1,1,1)),
         )
         self.resnet5b_bn = nn.BatchNorm3d(512)
 
